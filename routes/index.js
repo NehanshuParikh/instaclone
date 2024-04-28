@@ -56,8 +56,16 @@ router.get('/like/post/:id', isLoggedIn, async function(req, res) {
 });
 
 
+
+router.get('/search/:userId', async (req, res) => {
+  const targetUserId = req.params.userId;
+  // Add other necessary logic to fetch user data, etc.
+  res.render('profile', { targetUserId });
+});
+
+
 router.get('/edit',isLoggedIn, async function(req, res) {
-  const user = await userModel.find({username: req.session.passport.user });
+  const user = await userModel.findOne({username: req.session.passport.user });
   res.render('edit', {footer: true, user});
 });
 
@@ -65,14 +73,15 @@ router.get('/upload',isLoggedIn, function(req, res) {
   res.render('upload', {footer: true});
 });
 
+// used in searching the username
 router.get('/username/:username',isLoggedIn, async function(req, res) {
   const regex = new RegExp(`^${req.params.username}`,'i');
-  const users = await userModel.findOne({username: regex});
+  const users = await userModel.find({username: regex});
   res.json(users);
 });
 
 
-router.post("/register", function(req,res){
+router.post("/register",async function(req,res){
   const userData = new userModel({
     username: req.body.username,
     name: req.body.name,
@@ -85,10 +94,11 @@ router.post("/register", function(req,res){
       res.redirect("/profile");
     })
   })
+  
 });
 
 router.post("/login",passport.authenticate("local", {
-  successRedirect: "/profile",
+  successRedirect: "/feed",
   failureRedirect: "/login",
 }), function(req,res){ });
 
@@ -129,6 +139,18 @@ router.post('/upload',isLoggedIn, upload.single("image"), async function(req, re
   await user.save();
   res.redirect("/feed");
 });
+
+router.get("/message",async (req,res)=>{
+  const user = await userModel.findOne({username: req.session.passport.user});
+  const allUsers = await userModel.find();
+  console.log(allUsers);
+  res.render('message',{user, allUsers});
+})
+
+router.get(`/message/:userid`,async (req,res)=>{
+  const user = await userModel.findOne({_id: req.params.userid})
+  res.render('chatsection',{user})
+})
 
 function isLoggedIn(req,res,next){
   if (req.isAuthenticated()) {
